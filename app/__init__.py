@@ -17,9 +17,10 @@ def create_app(config_name):
     db.init_app(app)
 
     # temporary route
-    @app.route('/')
-    def hello_world():
-        return 'Hello, World!'
+    # @app.route('/')
+    # def hello_world():
+    #     return 'Hello, World!'
+    
     migrate = Migrate(app, db)
 
     from app import models

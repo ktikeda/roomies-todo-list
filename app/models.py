@@ -2,7 +2,7 @@ from app import db
 from datetime import datetime
 
 
-class User:
+class User(db.Model):
     """
     Create an Users table
     """
@@ -19,7 +19,7 @@ class User:
     updated_at = db.Column(db.DateTime, nullable=True)
 
 
-class Task:
+class Task(db.Model):
 
     __tablename__ = 'tasks'
 
@@ -34,7 +34,7 @@ class Task:
     completed_at = db.Column(db.DateTime, nullable=True)
 
 
-class TaskAssignee:
+class TaskAssignee(db.Model):
 
     __tablename = 'tasks_assignees'
 
