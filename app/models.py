@@ -18,6 +18,9 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     updated_at = db.Column(db.DateTime, nullable=True)
 
+    def __repr__(self):
+        return f"<User: {self.username} {self.email}>"
+
 
 class Task(db.Model):
 
