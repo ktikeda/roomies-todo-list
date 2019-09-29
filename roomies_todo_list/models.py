@@ -3,6 +3,14 @@ from datetime import datetime
 from marshmallow import Schema, fields, post_load
 
 
+class BadRequest(Exception):
+    """Custom exception class to be thrown when local error occurs."""
+    def __init__(self, message, status=400, payload=None):
+        self.message = message
+        self.status = status
+        self.payload = payload
+
+
 class User(db.Model):
     """
     Create an Users table
@@ -26,16 +34,13 @@ class User(db.Model):
         if kwargs is not None:
             for attr, val in kwargs.items():
                 setattr(self, attr, val)
-        
-        db.session.add(self)
-        db.session.commit()
 
     def __repr__(self):
         return f"<User: id={self.id} username={self.username} email={self.email}>"
 
 
 class UserSchema(Schema):
-    id = fields.Integer()
+    id = fields.Integer(dump_only=True)
     email = fields.Email(required=True, error_messages={"required": "Email is required."})
     username = fields.Str(required=True, error_messages={"required": "Username is required."})
     first_name = fields.Str()
@@ -49,9 +54,9 @@ class UserSchema(Schema):
         fields = ('id', 'email', 'username', 'first_name', 'last_name')
         ordered = True
 
-    @post_load
-    def make_user(self, data, **kwargs):
-        return User(**data)
+    # @post_load
+    # def make_user(self, data, **kwargs):
+    #     return User(**data)
 
 
 

@@ -1,0 +1,58 @@
+---
+
+test_name: Make sure server doubles number properly
+
+stages:
+  - name: Make sure we can create new users
+    request:
+      url: http://localhost:5000/users
+      json:
+        email: user@email.com
+        username: test_user
+        first_name: Test
+        last_name: User
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 201
+      body:
+        id: 
+        email: user@email.com
+        username: test_user
+        first_name: Test
+        last_name: User
+      save:
+        body:
+          id: test_user_id
+
+# ---
+
+# test_name: Check invalid inputs are handled
+
+# stages:
+#   - name: Make sure invalid numbers don't cause an error
+#     request:
+#       url: http://localhost:5000/double
+#       json:
+#         number: dkfsd
+#       method: POST
+#       headers:
+#         content-type: application/json
+#     response:
+#       status_code: 400
+#       body:
+#         error: a number was not passed
+
+#   - name: Make sure it raises an error if a number isn't passed
+#     request:
+#       url: http://localhost:5000/double
+#       json:
+#         wrong_key: 5
+#       method: POST
+#       headers:
+#         content-type: application/json
+#     response:
+#       status_code: 400
+#       body:
+#         error: no number passed
