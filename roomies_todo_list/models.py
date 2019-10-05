@@ -1,6 +1,7 @@
 from roomies_todo_list import db
 from datetime import datetime
 from marshmallow import Schema, fields, post_load
+from sqlalchemy.orm import relationship
 
 
 class BadRequest(Exception):
@@ -40,24 +41,19 @@ class User(db.Model):
 
 
 class UserSchema(Schema):
-    id = fields.Integer(dump_only=True)
+    id = fields.Integer() # TODO: Ensure that we cannot upate ID via put request
     email = fields.Email(required=True, error_messages={"required": "Email is required."})
     username = fields.Str(required=True, error_messages={"required": "Username is required."})
     first_name = fields.Str()
     last_name = fields.Str()
     password_hash = fields.Str(load_only=True)
-    created_at = fields.Date()
-    updated_at = fields.Date()
+    created_at = fields.DateTime()
+    updated_at = fields.DateTime()
 
     class Meta:
         model = User
         fields = ('id', 'email', 'username', 'first_name', 'last_name')
         ordered = True
-
-    # @post_load
-    # def make_user(self, data, **kwargs):
-    #     return User(**data)
-
 
 
 class Task(db.Model):
@@ -67,8 +63,10 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     name = db.Column(db.String(60), nullable=False)
     description = db.Column(db.String(120), nullable=True)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    completed_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    completed_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), default=None, nullable=True)
+    completed_by = relationship("User", foreign_keys=[completed_by_id])
     due_date = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     updated_at = db.Column(db.DateTime, nullable=True)
@@ -77,16 +75,30 @@ class Task(db.Model):
     def __init__(self, name, created_by, **kwargs):
         self.name = name
         self.created_by = created_by
+        self.created_by_id = created_by.id
 
         if kwargs is not None:
             for attr, val in kwargs.items():
                 setattr(self, attr, val)
-        
-        db.session.add(self)
-        db.session.commit()
 
     def __repr__(self):
-        return f"<Task: id={self.id} name={self.name}>"
+        return f"<Task: id={self.id} name={self.name} created_by={self.created_by}>"
+
+
+class TaskSchema(Schema):
+    id = fields.Integer(dump_only=True)
+    name = fields.Str()
+    description = fields.Str()
+    created_by = fields.Nested(UserSchema, only=('id', 'username'))
+    completed_by = fields.Nested(UserSchema, only=('id', 'username'))
+    due_date = fields.DateTime()
+    created_at = fields.DateTime()
+    updated_at = fields.DateTime()
+
+    class Meta:
+        model = Task
+        fields = ('id', 'name', 'description', 'created_by', 'due_date')
+        ordered = True
 
 
 class TaskAssignee(db.Model):
@@ -105,9 +117,6 @@ class TaskAssignee(db.Model):
         if kwargs is not None:
             for attr, val in kwargs.items():
                 setattr(self, attr, val)
-        
-        db.session.add(self)
-        db.session.commit()
 
     def __repr__(self):
         return f"<TaskAssignee: id={self.id} task_id={self.task_id} user_id={self.user_id}>"
