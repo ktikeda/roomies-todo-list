@@ -75,6 +75,7 @@ class Task(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     updated_at = db.Column(db.DateTime, nullable=True)
     completed_at = db.Column(db.DateTime, nullable=True)
+    is_completed = db.Column(db.Boolean, nullable=False, default=False)
 
     def __init__(self, name, created_by, **kwargs):
         self.name = name
@@ -100,11 +101,12 @@ class TaskSchema(Schema):
     completed_at = fields.DateTime()
     created_at = fields.DateTime()
     updated_at = fields.DateTime()
+    is_completed = fields.Boolean()
     
 
     class Meta:
         model = Task
-        fields = ('id', 'name', 'description', 'created_by', 'completed_at', 'due_date', 'completed_by', 'assignees')
+        fields = ('id', 'name', 'description', 'created_by', 'completed_at', 'due_date', 'completed_by', 'assignees', 'is_completed')
 
 
 class TaskAssignee(db.Model):
