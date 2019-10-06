@@ -1,9 +1,13 @@
-from roomies_todo_list import db
 from datetime import datetime
+
+from flask_login import UserMixin
 from marshmallow import Schema, fields, post_load
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import relationship
+from werkzeug.security import check_password_hash, generate_password_hash
 
+from roomies_todo_list import login
+from roomies_todo_list import db
 
 class BadRequest(Exception):
     """Custom exception class to be thrown when local error occurs."""
@@ -12,8 +16,11 @@ class BadRequest(Exception):
         self.status = status
         self.payload = payload
 
+@login.user_loader
+def load_user(id):
+    return User.query.get(int(id))
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     """
     Create an Users table
     """
@@ -40,7 +47,12 @@ class User(db.Model):
 
     def __repr__(self):
         return f"<User: id={self.id} username={self.username} email={self.email}>"
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
 
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 class UserSchema(Schema):
     id = fields.Integer() # TODO: Ensure that we cannot upate ID via put request

@@ -2,6 +2,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_login import LoginManager
 import os
 
 # local imports
@@ -17,6 +18,7 @@ config_name = os.getenv('FLASK_ENV')
 app.config.from_object(app_config[config_name])
 app.config.from_pyfile('config.py')
 db.init_app(app)
+login = LoginManager(app)
 
 import roomies_todo_list.views
 
