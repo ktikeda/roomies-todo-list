@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import request, jsonify, render_template
 from roomies_todo_list import app, db
 from .models import User, UserSchema, Task, TaskSchema, TaskAssignee
 from http import HTTPStatus
@@ -9,14 +9,19 @@ from .errors import BadRequest
 from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
 
+API = '/api'
 
 @app.route('/')
-def hello_world():
-    return 'Hello, World!'
+def index():
+    return render_template('index.html')
 
+
+@app.route('/favicon.ico')
+def favicon():
+    return ''
 
 # USER ROUTES
-@app.route('/users', methods=['POST'])
+@app.route(API + '/users', methods=['POST'])
 def add_user():
     try:
         data = UserSchema().load(request.get_json().get('user'))
@@ -36,7 +41,7 @@ def add_user():
         return jsonify(body), HTTPStatus.CREATED
 
 
-@app.route('/users', methods=['GET'])
+@app.route(API + '/users', methods=['GET'])
 def get_all_users():
     all_users = User.query.all()
     body = {'users': UserSchema().dump(all_users, many=True)}
@@ -44,7 +49,7 @@ def get_all_users():
     return jsonify(body), HTTPStatus.OK
 
 
-@app.route('/users/<int:user_id>', methods=['GET'])
+@app.route(API + '/users/<int:user_id>', methods=['GET'])
 def get_user(user_id):
     user = User.query.get(user_id)
     
@@ -56,7 +61,7 @@ def get_user(user_id):
     return jsonify(body), HTTPStatus.OK
 
 
-@app.route('/users/<int:user_id>', methods=['PATCH'])
+@app.route(API + '/users/<int:user_id>', methods=['PATCH'])
 def update_user(user_id):
     user = User.query.get(user_id)
 
@@ -79,7 +84,7 @@ def update_user(user_id):
     return jsonify(body), HTTPStatus.OK
 
 
-@app.route('/users/<int:user_id>', methods=['DELETE'])
+@app.route(API + '/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
     user = User.query.get(user_id)
     if user:
@@ -92,7 +97,7 @@ def delete_user(user_id):
 
 
 # TASK ROUTES
-@app.route('/tasks', methods=['POST'])
+@app.route(API + '/tasks', methods=['POST'])
 def add_task():
     # Check against TaskSchema
     try:
@@ -122,7 +127,7 @@ def add_task():
         return jsonify(body), HTTPStatus.CREATED
 
 
-@app.route('/tasks', methods=['GET'])
+@app.route(API + '/tasks', methods=['GET'])
 def get_all_tasks():
     all_tasks = Task.query.all()
     body = {'tasks': TaskSchema().dump(all_tasks, many=True)}
@@ -130,7 +135,7 @@ def get_all_tasks():
     return jsonify(body), HTTPStatus.OK
 
 
-@app.route('/tasks/<int:task_id>', methods=['GET'])
+@app.route(API + '/tasks/<int:task_id>', methods=['GET'])
 def get_task(task_id):
     task = Task.query.get(task_id)
 
@@ -142,7 +147,7 @@ def get_task(task_id):
     return jsonify(body), HTTPStatus.OK
 
 
-@app.route('/tasks/<int:task_id>', methods=['PATCH'])
+@app.route(API + '/tasks/<int:task_id>', methods=['PATCH'])
 def update_task(task_id):
     task = Task.query.get(task_id)
 
@@ -197,7 +202,7 @@ def update_task(task_id):
     return jsonify(body), HTTPStatus.OK
 
 
-@app.route('/tasks/<int:task_id>', methods=['DELETE'])
+@app.route(API + '/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
     task = Task.query.get(task_id)
     if task:

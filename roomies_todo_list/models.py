@@ -104,7 +104,7 @@ class TaskSchema(Schema):
 
     class Meta:
         model = Task
-        fields = ('id', 'name', 'description', 'created_by', 'completed_at', 'due_date', 'completed', 'assignees')
+        fields = ('id', 'name', 'description', 'created_by', 'completed_at', 'due_date', 'completed_by', 'assignees')
 
 
 class TaskAssignee(db.Model):
@@ -116,6 +116,7 @@ class TaskAssignee(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
 
+    # TODO: Debug unique constraint
     #__table_args__ = (UniqueConstraint('task_id', 'user_id', name='_task_user_uc'),)
 
     def __init__(self, task_id, user_id, **kwargs):
