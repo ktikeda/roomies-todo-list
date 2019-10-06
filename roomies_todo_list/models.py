@@ -1,6 +1,7 @@
 from roomies_todo_list import db
 from datetime import datetime
 from marshmallow import Schema, fields, post_load
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import relationship
 
 
@@ -25,6 +26,7 @@ class User(db.Model):
     first_name = db.Column(db.String(60), index=True)
     last_name = db.Column(db.String(60), index=True)
     password_hash = db.Column(db.String(128))
+    tasks = relationship('Task', secondary='tasks_assignees')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     updated_at = db.Column(db.DateTime, nullable=True)
 
@@ -46,13 +48,14 @@ class UserSchema(Schema):
     username = fields.Str(required=True, error_messages={"required": "Username is required."})
     first_name = fields.Str()
     last_name = fields.Str()
+    tasks = fields.List(fields.Nested('TaskSchema', only=('id', 'name')))
     password_hash = fields.Str(load_only=True)
     created_at = fields.DateTime()
     updated_at = fields.DateTime()
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'first_name', 'last_name')
+        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'tasks')
         ordered = True
 
 
@@ -67,6 +70,7 @@ class Task(db.Model):
     created_by = relationship("User", foreign_keys=[created_by_id])
     completed_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), default=None, nullable=True)
     completed_by = relationship("User", foreign_keys=[completed_by_id])
+    assignees = relationship("User", secondary='tasks_assignees')
     due_date = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
     updated_at = db.Column(db.DateTime, nullable=True)
@@ -89,26 +93,30 @@ class TaskSchema(Schema):
     id = fields.Integer(dump_only=True)
     name = fields.Str()
     description = fields.Str()
-    created_by = fields.Nested(UserSchema, only=('id', 'username'))
-    completed_by = fields.Nested(UserSchema, only=('id', 'username'))
+    created_by = fields.Nested('UserSchema', only=('id', 'username', 'email'))
+    completed_by = fields.Nested('UserSchema', only=('id', 'username', 'email'))
+    assignees = fields.List(fields.Nested('UserSchema', only=('id', 'username', 'email')))
     due_date = fields.DateTime()
+    completed_at = fields.DateTime()
     created_at = fields.DateTime()
     updated_at = fields.DateTime()
+    
 
     class Meta:
         model = Task
-        fields = ('id', 'name', 'description', 'created_by', 'due_date')
-        ordered = True
+        fields = ('id', 'name', 'description', 'created_by', 'completed_at', 'due_date', 'completed', 'assignees')
 
 
 class TaskAssignee(db.Model):
 
-    __tablename = 'tasks_assignees'
+    __tablename__ = 'tasks_assignees'
 
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now())
+
+    #__table_args__ = (UniqueConstraint('task_id', 'user_id', name='_task_user_uc'),)
 
     def __init__(self, task_id, user_id, **kwargs):
         self.task_id = task_id

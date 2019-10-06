@@ -1,6 +1,6 @@
 from flask import request, jsonify
 from roomies_todo_list import app, db
-from .models import User, UserSchema, Task, TaskSchema
+from .models import User, UserSchema, Task, TaskSchema, TaskAssignee
 from http import HTTPStatus
 from datetime import datetime
 
@@ -56,7 +56,7 @@ def get_user(user_id):
     return jsonify(body), HTTPStatus.OK
 
 
-@app.route('/users/<int:user_id>', methods=['PUT'])
+@app.route('/users/<int:user_id>', methods=['PATCH'])
 def update_user(user_id):
     user = User.query.get(user_id)
 
@@ -96,7 +96,7 @@ def delete_user(user_id):
 def add_task():
     # Check against TaskSchema
     try:
-        data = TaskSchema().load(request.get_json().get('task'))
+        data = TaskSchema(partial=('created_by.username', 'created_by.email')).load(request.get_json().get('task'))
     except ValidationError as e:
         raise BadRequest(e.messages)
      
@@ -142,7 +142,7 @@ def get_task(task_id):
     return jsonify(body), HTTPStatus.OK
 
 
-@app.route('/tasks/<int:task_id>', methods=['PUT'])
+@app.route('/tasks/<int:task_id>', methods=['PATCH'])
 def update_task(task_id):
     task = Task.query.get(task_id)
 
@@ -152,6 +152,38 @@ def update_task(task_id):
         data = TaskSchema(partial=True).load(request.get_json().get('task'))
     except ValidationError as e:
         raise BadRequest(e.messages)
+    
+    existing_assignees = set(task.assignees)
+    print(existing_assignees)
+    new_assignees = set()
+    for assignee in data.get('assignees', []):
+        user = User.query.get(assignee['id'])
+        if user:
+            new_assignees.add(user)
+        else:
+            raise BadRequest('User not found.', status=HTTPStatus.NOT_FOUND)
+        
+        
+    to_remove = existing_assignees - new_assignees
+    to_add = new_assignees - existing_assignees
+    print(f"to_remove: {to_remove}")
+    print(f"to_add: {to_add}")
+    try:
+        for user in to_add:
+            new_assignee = TaskAssignee(task_id=task.id, user_id=user.id)
+            db.session.add(new_assignee)
+
+        for user in to_remove:
+            old_assignee = TaskAssignee.query.filter(TaskAssignee.user_id == user.id, TaskAssignee.task_id == task.id).first()
+            if old_assignee:
+                db.session.delete(old_assignee)
+
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        raise BadRequest(f'Something went wrong: {e}')
+    
+    data.pop("assignees", None) 
     
     for attr, val in data.items():
         setattr(task, attr, val)
