@@ -58,36 +58,34 @@ class Task extends React.Component {
     super(props);
     this.state = {
       assignees: this.props.assignees,
-      is_completed: this.props.is_completed,
+      is_completed: Boolean(this.props.is_completed),
       due_date: this.props.due_date
     };
 
   } // end constructor
 
   updateTask = (data) => {
-    fetch(`/api/tasks/${this.props.id}`, { method: 'PATCH', body: JSON.stringify(data) })
-      .then(resp => resp.json())
+    fetch(`/api/tasks/${this.props.id}`, { 
+        method: 'PATCH', 
+        headers: {'Content-Type': 'application/json'}, 
+        body: JSON.stringify(data) })
+      .then(resp => {
+        if (resp.ok) {return resp.json()} else {
+          throw Error(resp.statusText);
+        };
+      })
       .then(data => {
         console.log(data);
         this.setState({ assignees: data.task.assignees, due_date: data.task.due_date, is_completed: data.task.is_completed });
-        }
-      );
+      });
   } // end updateTask
 
   handleCheckboxChange = (event) => {
-    // change checkbox
-    console.log(event);
-    this.setState({ is_completed: !this.state.is_completed });
-
-    // update completed_at state
-
-    // update task
     const data = {
       'task': {
-        'is_completed': this.state.is_completed
+        'is_completed': !this.state.is_completed
       }
     };
-
     this.updateTask(data);
   } // end handleCheckboxChange
 
