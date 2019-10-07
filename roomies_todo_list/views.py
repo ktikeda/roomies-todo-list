@@ -1,53 +1,56 @@
-from flask import request, jsonify,render_template
-from flask_login import current_user, login_user
-from roomies_todo_list import app, db
+from flask import request, jsonify, render_template, redirect, url_for, flash
+from flask_login import current_user, login_user, logout_user, login_required
+from roomies_todo_list import app, db, forms
 from .models import User, UserSchema, Task, TaskSchema, TaskAssignee
 from http import HTTPStatus
 from datetime import datetime
+from werkzeug import urls
 
 # Error Handling Imports
 from .errors import BadRequest
 from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
 
-API = '/api'
+API = "/api"
 
-<<<<<<< HEAD
-@app.route('/')
-def index():
-    return render_template('index.html')
-=======
+
 @app.route("/")
-def hello_world():
-    return "Hello, World!"
+@login_required
+def index():
+    return render_template("index.html")
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return ""
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
-    form = LoginForm()
+    form = forms.LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
             flash("Invalid username or password")
             return redirect(url_for("login"))
         login_user(user, remember=form.remember_me.data)
-        return redirect(url_for("index"))
+        next_page = request.args.get("next")
+        if not next_page or urls.url_parse(next_page).netloc != "":
+            next_page = url_for("index")
+        return redirect(next_page)
     return render_template("login.html", title="Sign In", form=form)
->>>>>>> WIP login
 
 
-@app.route('/favicon.ico')
-def favicon():
-    return ''
+@app.route("/logout")
+def logout():
+    logout_user()
+    return redirect(url_for("index"))
+
 
 # USER ROUTES
-<<<<<<< HEAD
-@app.route(API + '/users', methods=['POST'])
-=======
-@app.route("/users", methods=["POST"])
->>>>>>> WIP login
+@app.route(API + "/users", methods=["POST"])
 def add_user():
     try:
         data = UserSchema().load(request.get_json().get("user"))
@@ -67,11 +70,31 @@ def add_user():
         return jsonify(body), HTTPStatus.CREATED
 
 
-<<<<<<< HEAD
-@app.route(API + '/users', methods=['GET'])
-=======
-@app.route("/users", methods=["GET"])
->>>>>>> WIP login
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    form = forms.RegistrationForm()
+    if form.validate_on_submit():
+        try:
+            user = User( #TODO validate
+                username=form.username.data,
+                email=form.email.data,
+                first_name=form.first_name.data,
+                last_name=form.last_name.data,
+            )
+            user.set_password(form.password.data)
+            db.session.add(user)
+            db.session.commit()
+            flash("Congratulations, you are now a registered user!")
+        except ValidationError as e:
+            raise BadRequest(e.messages)
+
+        return redirect(url_for("login"))
+    return render_template("register.html", title="Register", form=form)
+
+
+@app.route(API + "/users", methods=["GET"])
 def get_all_users():
     all_users = User.query.all()
     body = {"users": UserSchema().dump(all_users, many=True)}
@@ -79,11 +102,7 @@ def get_all_users():
     return jsonify(body), HTTPStatus.OK
 
 
-<<<<<<< HEAD
-@app.route(API + '/users/<int:user_id>', methods=['GET'])
-=======
-@app.route("/users/<int:user_id>", methods=["GET"])
->>>>>>> WIP login
+@app.route(API + "/users/<int:user_id>", methods=["GET"])
 def get_user(user_id):
     user = User.query.get(user_id)
 
@@ -95,11 +114,7 @@ def get_user(user_id):
     return jsonify(body), HTTPStatus.OK
 
 
-<<<<<<< HEAD
-@app.route(API + '/users/<int:user_id>', methods=['PATCH'])
-=======
-@app.route("/users/<int:user_id>", methods=["PATCH"])
->>>>>>> WIP login
+@app.route(API + "/users/<int:user_id>", methods=["PATCH"])
 def update_user(user_id):
     user = User.query.get(user_id)
 
@@ -122,11 +137,7 @@ def update_user(user_id):
     return jsonify(body), HTTPStatus.OK
 
 
-<<<<<<< HEAD
-@app.route(API + '/users/<int:user_id>', methods=['DELETE'])
-=======
-@app.route("/users/<int:user_id>", methods=["DELETE"])
->>>>>>> WIP login
+@app.route(API + "/users/<int:user_id>", methods=["DELETE"])
 def delete_user(user_id):
     user = User.query.get(user_id)
     if user:
@@ -139,11 +150,7 @@ def delete_user(user_id):
 
 
 # TASK ROUTES
-<<<<<<< HEAD
-@app.route(API + '/tasks', methods=['POST'])
-=======
-@app.route("/tasks", methods=["POST"])
->>>>>>> WIP login
+@app.route(API + "/tasks", methods=["POST"])
 def add_task():
     # Check against TaskSchema
     try:
@@ -175,11 +182,7 @@ def add_task():
         return jsonify(body), HTTPStatus.CREATED
 
 
-<<<<<<< HEAD
-@app.route(API + '/tasks', methods=['GET'])
-=======
-@app.route("/tasks", methods=["GET"])
->>>>>>> WIP login
+@app.route(API + "/tasks", methods=["GET"])
 def get_all_tasks():
     all_tasks = Task.query.all()
     body = {"tasks": TaskSchema().dump(all_tasks, many=True)}
@@ -187,11 +190,7 @@ def get_all_tasks():
     return jsonify(body), HTTPStatus.OK
 
 
-<<<<<<< HEAD
-@app.route(API + '/tasks/<int:task_id>', methods=['GET'])
-=======
-@app.route("/tasks/<int:task_id>", methods=["GET"])
->>>>>>> WIP login
+@app.route(API + "/tasks/<int:task_id>", methods=["GET"])
 def get_task(task_id):
     task = Task.query.get(task_id)
 
@@ -203,11 +202,7 @@ def get_task(task_id):
     return jsonify(body), HTTPStatus.OK
 
 
-<<<<<<< HEAD
-@app.route(API + '/tasks/<int:task_id>', methods=['PATCH'])
-=======
-@app.route("/tasks/<int:task_id>", methods=["PATCH"])
->>>>>>> WIP login
+@app.route(API + "/tasks/<int:task_id>", methods=["PATCH"])
 def update_task(task_id):
     task = Task.query.get(task_id)
 
@@ -263,11 +258,7 @@ def update_task(task_id):
     return jsonify(body), HTTPStatus.OK
 
 
-<<<<<<< HEAD
-@app.route(API + '/tasks/<int:task_id>', methods=['DELETE'])
-=======
-@app.route("/tasks/<int:task_id>", methods=["DELETE"])
->>>>>>> WIP login
+@app.route(API + "/tasks/<int:task_id>", methods=["DELETE"])
 def delete_task(task_id):
     task = Task.query.get(task_id)
     if task:
