@@ -209,7 +209,8 @@ def update_task(task_id):
     if not task:
         raise BadRequest("Resource not found.", status=HTTPStatus.NOT_FOUND)
     try:
-        data = TaskSchema(partial=True).load(request.get_json().get("task"))
+        print(request.get_json())
+        data = TaskSchema(partial=True).load(request.get_json().get('task'))
     except ValidationError as e:
         raise BadRequest(e.messages)
 
